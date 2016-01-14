@@ -3,6 +3,9 @@ import java.util.ConcurrentModificationException
 import java.util.Deque
 import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * Created by Eric Tsang on 1/13/2016.
@@ -25,6 +28,8 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
     private var firstNode:Node<E>? = null
 
     private var lastNode:Node<E>? = null
+
+    private val lock = ReentrantReadWriteLock()
 
     override var size:Int = 0
         protected set
@@ -104,7 +109,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         override fun next():E = it.previous()
     }
 
-    private fun node(index:Int):Node<E>? = synchronized(cachedNodes)
+    private fun node(index:Int):Node<E>? = lock.read()
     {
         // fail fast if index is out of bounds
         if (index !in indices) return null
@@ -163,8 +168,6 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
 
     override fun listIterator(index:Int) = object:MutableListIterator<E>
     {
-        val mutex = Any()
-
         var nextIndex = index
         var nextNode:Node<E>? = node(nextIndex)
         var prevIndex = index-1
@@ -177,7 +180,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             listIterators.put(this,this)
         }
 
-        override fun add(element:E) = synchronized(mutex)
+        override fun add(element:E) = lock.write()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
 
@@ -202,10 +205,10 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             // make other list iterators associated with this list throw exceptions
             listIterators.values.removeAll {it !== this}
 
-            return@synchronized Unit
+            return@write Unit
         }
 
-        override fun remove() = synchronized(mutex)
+        override fun remove() = lock.write()
         {
             // fail fast if there is no node to remove or concurrent modification
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
@@ -248,27 +251,27 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             // make other list iterators associated with this list throw exceptions
             listIterators.values.removeAll {it !== this}
 
-            return@synchronized Unit
+            return@write Unit
         }
 
-        override fun set(element:E)
+        override fun set(element:E) = lock.write()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             subjectNode!!.data = element
         }
 
-        override fun hasNext():Boolean
+        override fun hasNext():Boolean = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             return nextNode != null
         }
-        override fun hasPrevious():Boolean
+        override fun hasPrevious():Boolean = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             return prevNode != null
         }
 
-        override fun next():E = synchronized(mutex)
+        override fun next():E = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
 
@@ -282,7 +285,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             return result
         }
 
-        override fun previous():E = synchronized(mutex)
+        override fun previous():E = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
 
@@ -296,12 +299,12 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             return result
         }
 
-        override fun nextIndex():Int
+        override fun nextIndex():Int = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             return nextIndex
         }
-        override fun previousIndex():Int
+        override fun previousIndex():Int = lock.read()
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             return prevIndex
