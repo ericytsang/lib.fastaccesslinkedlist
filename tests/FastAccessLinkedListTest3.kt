@@ -7,26 +7,15 @@ import java.util.ArrayList
 class FastAccessLinkedListTest3
 {
     val iterations = 0..10000
-    val elements = 0..100000
-    val accessed = 45000..55000
+    val elements = 0..10000
+    val accessed = 4500..5500
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
-    val alist = ArrayList<Int>()
 
     init
     {
         falist.addAll(elements)
         llist.addAll(elements)
-        alist.addAll(elements)
-    }
-
-    fun compare(list1:List<*>,list2:List<*>)
-    {
-        assert(list1.size == list2.size)
-        for(i in list1.indices)
-        {
-            assert(list1[i] == list2[i])
-        }
     }
 
     @Test
@@ -56,12 +45,18 @@ class FastAccessLinkedListTest3
     @Test
     fun accessTest3()
     {
-        compare(llist,alist)
+        val stb = StringBuilder()
+        stb.append("accesses: ")
+        for(index in llist.indices) stb.append(if (index == 0) llist[index] else ", ${llist[index]}")
+        println(stb)
     }
 
     @Test
     fun accessTest4()
     {
-        compare(falist,alist)
+        val stb = StringBuilder()
+        stb.append("accesses: ")
+        for(index in falist.indices) stb.append(if (index == 0) falist[index] else ", ${falist[index]}")
+        println(stb)
     }
 }
