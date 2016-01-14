@@ -170,9 +170,10 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
     {
         // resolve the node nearest the specified index will at least be
         // resolved to either the first or last node
-        val nearestNode = cachedNodes.minBy {Math.abs(it.index-index)} ?:
-            if (index < size shr 1) IndexedNode(0,firstNode!!)
-            else IndexedNode(lastIndex,lastNode!!)
+        val nearestNode = cachedNodes
+            .plus(IndexedNode(0,firstNode!!))
+            .plus(IndexedNode(lastIndex,lastNode!!))
+            .minBy {Math.abs(it.index-index)}!!
 
         // iterate through the list until we reach the requested node
         var (nodeIndex,node) = nearestNode
