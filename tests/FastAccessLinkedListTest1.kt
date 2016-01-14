@@ -17,19 +17,12 @@ class FastAccessLinkedListTest1
     fun accessTest()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         assert(list[5] == 5)
-        println("5")
         assert(list[1] == 1)
-        println("1")
         assert(list[8] == 8)
-        println("8")
         assert(list[0] == 0)
-        println("0")
         assert(list[9] != 90)
-        println("9")
         assert(list[19] == 19)
-        println("19")
         println("$list, size: ${list.size}")
         assert(list == listOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
     }
@@ -38,17 +31,11 @@ class FastAccessLinkedListTest1
     fun removeAtTest1()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         list.removeAt(5)
-        println("finished list.removeAt(5)")
         list.removeAt(10)
-        println("finished list.removeAt(10)")
         list.removeAt(8)
-        println("finished list.removeAt(8)")
         list.removeAt(19)
-        println("finished list.removeAt(19)")
         list.removeAt(0)
-        println("finished list.removeAt(0)")
         println("$list, size: ${list.size}")
         assert(list == listOf(1,2,3,4,6,7,8,10,12,13,14,15,16,17,18,19,20,21,23,24,25,26,27,28,29))
     }
@@ -57,7 +44,6 @@ class FastAccessLinkedListTest1
     fun removeAtTest2()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         list.removeAt(10)
         list.removeAt(10)
         list.removeAt(10)
@@ -71,7 +57,6 @@ class FastAccessLinkedListTest1
     fun removeAtTest3()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         list.removeAt(10)
         list.removeAt(11)
         list.removeAt(12)
@@ -85,7 +70,6 @@ class FastAccessLinkedListTest1
     fun removeAtTest4()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         list.removeAt(14)
         list.removeAt(13)
         list.removeAt(12)
@@ -125,7 +109,6 @@ class FastAccessLinkedListTest1
     fun removeTest()
     {
         val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5,6,7,8,9,19,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
-        println("inserted everything")
         list.removeFirstOccurrence(5)
         list.removeLastOccurrence(10)
         list.removeFirstOccurrence(8)
