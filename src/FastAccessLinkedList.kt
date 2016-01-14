@@ -39,51 +39,51 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         addAll(elements)
     }
 
-    override fun addFirst(e:E) = add(0,e)
-    override fun addLast(e:E) = add(lastIndex,e)
+    override fun addFirst(e:E) = lock.write {add(0,e)}
+    override fun addLast(e:E) = lock.write {add(lastIndex,e)}
 
     override fun element():E = first
-    override fun getLast():E = last()
-    override fun getFirst():E = first()
+    override fun getLast():E = lock.read {last()}
+    override fun getFirst():E = lock.read {first()}
 
     override fun peek():E? = peekFirst()
-    override fun peekFirst():E? = firstOrNull()
-    override fun peekLast():E? = lastOrNull()
+    override fun peekFirst():E? = lock.read {firstOrNull()}
+    override fun peekLast():E? = lock.read {lastOrNull()}
 
     override fun remove():E = removeFirst()
-    override fun removeFirst():E = super.removeAt(0)
-    override fun removeLast():E = super.removeAt(lastIndex)
+    override fun removeFirst():E = lock.write {super.removeAt(0)}
+    override fun removeLast():E = lock.write {super.removeAt(lastIndex)}
 
     override fun pop():E = removeFirst()
     override fun push(e:E) = addFirst(e)
 
     override fun offer(e:E):Boolean = offerLast(e)
-    override fun offerFirst(e:E):Boolean
+    override fun offerFirst(e:E):Boolean = lock.write()
     {
         addFirst(e)
         return true
     }
-    override fun offerLast(e:E):Boolean
+    override fun offerLast(e:E):Boolean = lock.write()
     {
         addLast(e)
         return true
     }
 
     override fun poll():E? = pollFirst()
-    override fun pollFirst():E?
+    override fun pollFirst():E? = lock.write()
     {
         val e = peekFirst()
         if (e != null) removeFirst()
         return e
     }
-    override fun pollLast():E?
+    override fun pollLast():E? = lock.write()
     {
         val e = peekLast()
         if (e != null) removeLast()
         return e
     }
 
-    private fun removeFirstOccurrence(o:Any?,it:MutableIterator<E>):Boolean
+    private fun removeFirstOccurrence(o:Any?,it:MutableIterator<E>):Boolean = lock.write()
     {
         while (it.hasNext())
         {
@@ -227,10 +227,11 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
                 }
                 else -> throw RuntimeException("else case executed")
             }
+            nextIndex--
 
             // adjust indices of cached nodes
             cachedNodes.remove(IndexedNode(subjectIndex,subjectNode))
-            cachedNodes.filter {it.index >= nextIndex}. forEach {it.index--}
+            cachedNodes.filter {it.index > subjectIndex}. forEach {it.index--}
 
             // remove the subject node
             nextNode?.prev = prevNode
@@ -241,9 +242,6 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             if (nextNode == null) lastNode = prevNode
             this.subjectNode = null
             size--
-
-            // update indices
-            nextIndex--
 
             // make other list iterators associated with this list throw exceptions
             listIterators.values.removeAll {it !== this}
@@ -318,4 +316,4 @@ private data class Node<D>(var next:Node<D>?,var prev:Node<D>?,var data:D)
 
 private data class IndexedNode<D>(var index:Int,var node:Node<D>)
 
-private fun debug(string:String) = Unit// println(string)
+private fun debug(string:String) = Unit//println(string)
