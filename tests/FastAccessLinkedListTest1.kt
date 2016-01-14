@@ -143,4 +143,23 @@ class FastAccessLinkedListTest1
         assert(list == listOf(1,2,3,4,6,7,9,19,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28))
         compare(list,listOf(1,2,3,4,6,7,9,19,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28))
     }
+
+    @Test
+    fun concurrentModificationException()
+    {
+        var thrown = false
+        try
+        {
+            val list = FastAccessLinkedList(arrayListOf(0,1,2,3,4,5))
+            val it = list.listIterator()
+            list.add(6)
+            it.next()
+        }
+        catch(ex:Exception)
+        {
+            ex.printStackTrace()
+            thrown = true
+        }
+        assert(thrown)
+    }
 }
