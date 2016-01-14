@@ -166,39 +166,34 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         modCount++
     }
 
-    private fun node(index:Int):Node<E>? = lock.read()
+    private fun node(index:Int):Node<E> = lock.read()
     {
-        // fail fast if index is out of bounds
-        if (index !in indices) return null
-
         // resolve the node nearest the specified index will at least be
         // resolved to either the first or last node
-        val nearestNode = cachedNodes
-            .plus(IndexedNode(0,firstNode!!))
-            .plus(IndexedNode(lastIndex,lastNode!!))
-            .minBy {Math.abs(it.index-index)}!!
+        val nearestNode = cachedNodes.minBy {Math.abs(it.index-index)} ?:
+            if (index < size shr 1) IndexedNode(0,firstNode!!)
+            else IndexedNode(lastIndex,lastNode!!)
 
         // iterate through the list until we reach the requested node
-        var nodeIndex = nearestNode.index
-        var node = nearestNode.node
+        var (nodeIndex,node) = nearestNode
         debug("index distance: ${Math.abs(nodeIndex-index)}")
 
-        while (nodeIndex > index)
+        if (nodeIndex > index)
         {
-            node = node.prev!!
-            nodeIndex--
+            for (i in index+1..nodeIndex) node = node.prev!!
         }
-
-        while (nodeIndex < index)
+        else
         {
-            node = node.next!!
-            nodeIndex++
+            for (i in nodeIndex+1..index) node = node.next!!
         }
 
         // add this node to the cached nodes and remove previous (if any) to
         // maintain its LRU ordering
-        val resultNode = IndexedNode(nodeIndex,node)
-        cachedNodes.remove(resultNode)
+        val resultNode = IndexedNode(index,node)
+        if (nearestNode == resultNode)
+        {
+            cachedNodes.remove(resultNode)
+        }
         if (cachedNodes.remainingCapacity() == 0)
         {
             cachedNodes.poll()
