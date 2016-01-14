@@ -1,9 +1,12 @@
 import java.util.AbstractSequentialList
 import java.util.ConcurrentModificationException
 import java.util.Deque
+import java.util.NoSuchElementException
+import java.util.Objects
 import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.function.Consumer
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -18,12 +21,6 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
      * index in the [FastAccessLinkedList].
      */
     private val cachedNodes = LinkedBlockingQueue<IndexedNode<E>>(numCachedNodes)
-
-    /**
-     * holds a weak referee to all of this [FastAccessLinkedList]'s
-     * [MutableListIterator]s.
-     */
-    private val listIterators = WeakHashMap<MutableListIterator<E>,MutableListIterator<E>>()
 
     private var firstNode:Node<E>? = null
 
@@ -74,7 +71,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
     {
         val e = peekFirst()
         if (e != null) removeFirst()
-        return e
+        return firstNode?.data
     }
     override fun pollLast():E? = lock.write()
     {
@@ -98,37 +95,96 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
     override fun removeFirstOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,iterator())
     override fun removeLastOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,descendingIterator())
 
+    private fun unlink(x:Node<E>):E
+    {
+        // assert x != null;
+        val element = x.data
+        val next = x.next
+        val prev = x.prev
+
+        if (prev == null)
+        {
+            firstNode = next
+        }
+        else
+        {
+            prev.next = next
+            x.prev = null
+        }
+
+        if (next == null)
+        {
+            lastNode = prev
+        }
+        else
+        {
+            next.prev = prev
+            x.next = null
+        }
+
+        x.data = null
+        size--
+        modCount++
+        return element as E
+    }
+
+    /**
+     * Links e as last element.
+     */
+    private fun linkLast(e:E)
+    {
+        val l = lastNode
+        val newNode = Node(null,l,e)
+        lastNode = newNode
+        if (l == null)
+        {
+            firstNode = newNode
+        }
+        else
+        {
+            l.next = newNode
+        }
+        size++
+        modCount++
+    }
+
+    /**
+     * Inserts element e before non-null Node succ.
+     */
+    private fun linkBefore(e:E,succ:Node<E>)
+    {
+        // assert succ != null;
+        val pred = succ.prev
+        val newNode = Node(succ,pred,e)
+        succ.prev = newNode
+        if (pred == null)
+        {
+            firstNode = newNode
+        }
+        else
+        {
+            pred.next = newNode
+        }
+        size++
+        modCount++
+    }
+
     private fun node(index:Int):Node<E>? = lock.read()
     {
         // fail fast if index is out of bounds
         if (index !in indices) return null
 
-        // resolve the node nearest the specified index
-        val nearestNode = run()
-        {
-            var bestCandidate:IndexedNode<E>? = null
-
-            // try to resolve the nearest node from cached nodes
-            cachedNodes
-                // plus the firstNode and lastNode so that the bestCandidate
-                // will be at least resolved to either the first or last node
-                .plus(IndexedNode(0,firstNode!!))
-                .plus(IndexedNode(lastIndex,lastNode!!))
-                .forEach()
-                {
-                    if (bestCandidate == null || Math.abs(it.index-index) < Math.abs(bestCandidate!!.index-index))
-                    {
-                        bestCandidate = it
-                    }
-                }
-
-            return@run bestCandidate!!
-        }
+        // resolve the node nearest the specified index will at least be
+        // resolved to either the first or last node
+        val nearestNode = cachedNodes
+            .plus(IndexedNode(0,firstNode!!))
+            .plus(IndexedNode(lastIndex,lastNode!!))
+            .minBy {Math.abs(it.index-index)}!!
 
         // iterate through the list until we reach the requested node
         var nodeIndex = nearestNode.index
         var node = nearestNode.node
-        debug("index distance: ${Math.abs(nodeIndex - index)}")
+        debug("index distance: ${Math.abs(nodeIndex-index)}")
 
         while (nodeIndex > index)
         {
@@ -165,155 +221,111 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
 
     override fun listIterator(index:Int) = object:MutableListIterator<E>
     {
-        var nextIndex = index
-        var nextNode:Node<E>? = node(nextIndex)
-        var prevIndex = index-1
-        var prevNode:Node<E>? = node(prevIndex)
-        var subjectNode:Node<E>? = null
+        private var lastReturned:Node<E>? = null
+        private var next:Node<E>? = null
+        private var nextIndex:Int = 0
+        private var expectedModCount = modCount
 
         init
         {
-            // register self with list
-            listIterators.put(this,this)
+            // assert isPositionIndex(index);
+            next = if (index == size) null else node(index)
+            nextIndex = index
         }
 
-        override fun add(element:E) = lock.write()
+        override fun hasNext():Boolean
         {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
+            return nextIndex < size
+        }
 
-            // insert the element into the list
-            val newNode = Node(nextNode,prevNode,element)
-            nextNode?.prev = newNode
-            prevNode?.next = newNode
-            size++
+        override fun next():E
+        {
+            checkForComodification()
+            if (!hasNext())
+                throw NoSuchElementException()
 
-            // adjust indices of cached nodes
-            cachedNodes.filter {it.index >= nextIndex}. forEach {it.index++}
-
-            // update indices and node pointers
+            lastReturned = next
+            next = next!!.next
             nextIndex++
-            prevNode = newNode
-            prevIndex++
-
-            // update first and last pointers
-            if (prevIndex == 0) firstNode = prevNode
-            if (prevIndex == lastIndex) lastNode = prevNode
-
-            // make other list iterators associated with this list throw exceptions
-            listIterators.values.removeAll {it !== this}
-
-            return@write Unit
+            return lastReturned!!.data as E
         }
 
-        override fun remove() = lock.write()
+        override fun hasPrevious():Boolean
         {
-            // fail fast if there is no node to remove or concurrent modification
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-            val subjectNode = subjectNode ?: throw IllegalStateException("neither next nor previous have been called, or remove or add have been called after the last call to next or previous")
-            val subjectIndex:Int
+            return nextIndex > 0
+        }
 
-            // update node pointers & indices
-            when
-            {
-                nextNode == subjectNode ->
-                {
-                    nextNode = subjectNode.next
-                    subjectIndex = nextIndex++
-                }
-                prevNode == subjectNode ->
-                {
-                    prevNode = subjectNode.prev
-                    subjectIndex = prevIndex--
-                }
-                else -> throw RuntimeException("else case executed")
-            }
+        override fun previous():E
+        {
+            checkForComodification()
+            if (!hasPrevious())
+                throw NoSuchElementException()
+
+            next = if (next == null) lastNode else next!!.prev
+            lastReturned = next
             nextIndex--
-
-            // adjust indices of cached nodes
-            cachedNodes.remove(IndexedNode(subjectIndex,subjectNode))
-            cachedNodes.filter {it.index > subjectIndex}. forEach {it.index--}
-
-            // remove the subject node
-            nextNode?.prev = prevNode
-            prevNode?.next = nextNode
-            subjectNode.prev = null
-            subjectNode.next = null
-            if (prevNode == null) firstNode = nextNode
-            if (nextNode == null) lastNode = prevNode
-            this.subjectNode = null
-            size--
-
-            // make other list iterators associated with this list throw exceptions
-            listIterators.values.removeAll {it !== this}
-
-            return@write Unit
+            return lastReturned!!.data as E
         }
 
-        override fun set(element:E) = lock.write()
+        override fun nextIndex():Int
         {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-            subjectNode!!.data = element
-
-            // make other list iterators associated with this list throw exceptions
-            listIterators.values.removeAll {it !== this}
-
-            return@write Unit
-        }
-
-        override fun hasNext():Boolean = lock.read()
-        {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-            return nextNode != null
-        }
-        override fun hasPrevious():Boolean = lock.read()
-        {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-            return prevNode != null
-        }
-
-        override fun next():E = lock.read()
-        {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-
-            debug("next()")
-            val result = nextNode!!.data
-            subjectNode = nextNode
-            prevNode = nextNode
-            prevIndex = nextIndex
-            nextNode = nextNode!!.next
-            nextIndex++
-            return result
-        }
-
-        override fun previous():E = lock.read()
-        {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-
-            debug("previous()")
-            val result = prevNode!!.data
-            subjectNode = prevNode
-            nextNode = prevNode
-            nextIndex = prevIndex
-            prevNode = prevNode!!.prev
-            prevIndex--
-            return result
-        }
-
-        override fun nextIndex():Int = lock.read()
-        {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             return nextIndex
         }
-        override fun previousIndex():Int = lock.read()
+
+        override fun previousIndex():Int
         {
-            if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
-            return prevIndex
+            return nextIndex-1
+        }
+
+        override fun remove()
+        {
+            checkForComodification()
+            if (lastReturned == null)
+                throw IllegalStateException()
+
+            val lastNext = lastReturned!!.next
+            unlink(lastReturned!!)
+            if (next === lastReturned)
+                next = lastNext
+            else
+                nextIndex--
+            cachedNodes.remove(IndexedNode(nextIndex,lastReturned!!))
+            cachedNodes.filter {it.index > nextIndex}. forEach {it.index--}
+            lastReturned = null
+            expectedModCount++
+        }
+
+        override fun set(element:E)
+        {
+            if (lastReturned == null)
+                throw IllegalStateException()
+            checkForComodification()
+            lastReturned!!.data = element
+        }
+
+        override fun add(element:E)
+        {
+            checkForComodification()
+            lastReturned = null
+            if (next == null)
+                linkLast(element)
+            else
+                linkBefore(element,next!!)
+            cachedNodes.filter {it.index >= nextIndex}. forEach {it.index++}
+            nextIndex++
+            expectedModCount++
+        }
+
+        internal fun checkForComodification()
+        {
+            if (modCount != expectedModCount)
+                throw ConcurrentModificationException()
         }
     }
+
+    private data class Node<D>(var next:Node<D>?,var prev:Node<D>?,var data:D?)
+
+    private data class IndexedNode<D>(var index:Int,var node:Node<D>)
+
+    private fun debug(string:String) = Unit//println(string)
 }
-
-private data class Node<D>(var next:Node<D>?,var prev:Node<D>?,var data:D)
-
-private data class IndexedNode<D>(var index:Int,var node:Node<D>)
-
-private fun debug(string:String) = Unit//println(string)
