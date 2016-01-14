@@ -6,16 +6,17 @@ import java.util.ArrayList
  */
 class FastAccessLinkedListTest3
 {
+    val iterations = 0..10000
+    val elements = 0..100000
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
-    val alist = ArrayList<Int>(10001)
-    val range = 0..100
+    val alist = ArrayList<Int>()
 
     init
     {
-        falist.addAll(0..10000)
-        llist.addAll(0..10000)
-        alist.addAll(0..10000)
+        falist.addAll(elements)
+        llist.addAll(elements)
+        alist.addAll(elements)
     }
 
     fun compare(list1:List<*>,list2:List<*>)
@@ -30,30 +31,24 @@ class FastAccessLinkedListTest3
     @Test
     fun accessTest1()
     {
-        print("indices: ")
-        for(i in range)
+        print("accesses: ")
+        for(i in iterations)
         {
             val index = (Math.random()*alist.lastIndex).toInt()
-            assert(llist[index] == index)
-            print(if (i == 0) index else ", $index")
+            print(if (i == 0) llist[index] else ", ${llist[index]}")
         }
         println()
-        for(i in range) assert(llist == alist)
-        for(i in range) compare(llist,alist)
     }
 
     @Test
     fun accessTest2()
     {
-        print("indices: ")
-        for(i in range)
+        print("accesses: ")
+        for(i in iterations)
         {
             val index = (Math.random()*alist.lastIndex).toInt()
-            assert(llist[index] == index)
-            print(if (i == 0) index else ", $index")
+            print(if (i == 0) llist[index] else ", ${llist[index]}")
         }
         println()
-        for(i in range) assert(falist == alist)
-        for(i in range) compare(falist,alist)
     }
 }
