@@ -5,12 +5,22 @@ import org.junit.Test
  */
 class FastAccessLinkedListTest1
 {
+    fun compare(list1:List<*>,list2:List<*>)
+    {
+        assert(list1.size == list2.size)
+        for(i in list1.indices)
+        {
+            assert(list1[i] == list2[i])
+        }
+    }
+
     @Test
     fun addAllTest()
     {
         val list = FastAccessLinkedList(arrayListOf(1,2,4,5,3,3,2,2,5,3))
         println("$list, size: ${list.size}")
         assert(list == listOf(1,2,4,5,3,3,2,2,5,3))
+        compare(list,listOf(1,2,4,5,3,3,2,2,5,3))
     }
 
     @Test
@@ -25,6 +35,7 @@ class FastAccessLinkedListTest1
         assert(list[19] == 19)
         println("$list, size: ${list.size}")
         assert(list == listOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
+        compare(list,listOf(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
     }
 
     @Test
@@ -36,8 +47,10 @@ class FastAccessLinkedListTest1
         list.removeAt(8)
         list.removeAt(19)
         list.removeAt(0)
+        list.removeAt(24)
         println("$list, size: ${list.size}")
-        assert(list == listOf(1,2,3,4,6,7,8,10,12,13,14,15,16,17,18,19,20,21,23,24,25,26,27,28,29))
+        compare(list,listOf(1,2,3,4,6,7,8,10,12,13,14,15,16,17,18,19,20,21,23,24,25,26,27,28))
+        assert(list == listOf(1,2,3,4,6,7,8,10,12,13,14,15,16,17,18,19,20,21,23,24,25,26,27,28))
     }
 
     @Test
@@ -50,6 +63,9 @@ class FastAccessLinkedListTest1
         list.removeAt(10)
         list.removeAt(10)
         println("$list, size: ${list.size}")
+        assert(list[10] == 15)
+        assert(list[9] == 9)
+        compare(list,listOf(0,1,2,3,4,5,6,7,8,9,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
         assert(list == listOf(0,1,2,3,4,5,6,7,8,9,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
     }
 
@@ -63,6 +79,9 @@ class FastAccessLinkedListTest1
         list.removeAt(13)
         list.removeAt(14)
         println("$list, size: ${list.size}")
+        assert(list[10] == 11)
+        assert(list[9] == 9)
+        compare(list,listOf(0,1,2,3,4,5,6,7,8,9,11,13,15,17,19,20,21,22,23,24,25,26,27,28,29))
         assert(list == listOf(0,1,2,3,4,5,6,7,8,9,11,13,15,17,19,20,21,22,23,24,25,26,27,28,29))
     }
 
@@ -76,6 +95,9 @@ class FastAccessLinkedListTest1
         list.removeAt(11)
         list.removeAt(10)
         println("$list, size: ${list.size}")
+        assert(list[10] == 15)
+        assert(list[9] == 9)
+        compare(list,listOf(0,1,2,3,4,5,6,7,8,9,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
         assert(list == listOf(0,1,2,3,4,5,6,7,8,9,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29))
     }
 
@@ -90,6 +112,7 @@ class FastAccessLinkedListTest1
         list.add(0,4)
         println("$list, size: ${list.size}")
         assert(list == listOf(4,3,2,1,0))
+        compare(list,listOf(4,3,2,1,0))
     }
 
     @Test
@@ -103,6 +126,7 @@ class FastAccessLinkedListTest1
         list.add(4,4)
         println("$list, size: ${list.size}")
         assert(list == listOf(0,1,2,3,4))
+        compare(list,listOf(0,1,2,3,4))
     }
 
     @Test
@@ -117,5 +141,6 @@ class FastAccessLinkedListTest1
         list.removeLastOccurrence(29)
         println("$list, size: ${list.size}")
         assert(list == listOf(1,2,3,4,6,7,9,19,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28))
+        compare(list,listOf(1,2,3,4,6,7,9,19,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28))
     }
 }
