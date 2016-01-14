@@ -258,6 +258,11 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         {
             if (!listIterators.containsKey(this)) throw ConcurrentModificationException()
             subjectNode!!.data = element
+
+            // make other list iterators associated with this list throw exceptions
+            listIterators.values.removeAll {it !== this}
+
+            return@write Unit
         }
 
         override fun hasNext():Boolean = lock.read()
