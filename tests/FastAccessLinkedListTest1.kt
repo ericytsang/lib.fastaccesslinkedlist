@@ -3,7 +3,7 @@ import org.junit.Test
 /**
  * Created by Eric Tsang on 1/13/2016.
  */
-class FastAccessLinkedListTest
+class FastAccessLinkedListTest1
 {
     @Test
     fun addAllTest()

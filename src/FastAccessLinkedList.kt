@@ -8,7 +8,7 @@ import java.util.concurrent.LinkedBlockingQueue
  * Created by Eric Tsang on 1/13/2016.
  */
 
-open class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNodes:Int = 10):AbstractSequentialList<E>(),Deque<E>
+class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNodes:Int = 10):AbstractSequentialList<E>(),Deque<E>
 {
     /**
      * [LinkedBlockingQueue] ordered by LRU of [Pair]s of [Node]s and their
@@ -80,7 +80,7 @@ open class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCache
         return e
     }
 
-    fun removeFirstOccurrence(o:Any?,it:MutableIterator<E>):Boolean
+    private fun removeFirstOccurrence(o:Any?,it:MutableIterator<E>):Boolean
     {
         while (it.hasNext())
         {
@@ -313,7 +313,4 @@ private data class Node<D>(var next:Node<D>?,var prev:Node<D>?,var data:D)
 
 private data class IndexedNode<D>(var index:Int,var node:Node<D>)
 
-private fun debug(string:String)
-{
-    // println(string)
-}
+private fun debug(string:String) = Unit// println(string)
