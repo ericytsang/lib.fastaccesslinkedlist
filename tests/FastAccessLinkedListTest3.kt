@@ -8,6 +8,7 @@ class FastAccessLinkedListTest3
 {
     val iterations = 0..10000
     val elements = 0..100000
+    val accessed = 45000..55000
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
     val alist = ArrayList<Int>()
@@ -34,7 +35,7 @@ class FastAccessLinkedListTest3
         print("accesses: ")
         for(i in iterations)
         {
-            val index = (Math.random()*alist.lastIndex).toInt()
+            val index = (accessed.start+Math.random()*(accessed.endInclusive-accessed.start)).toInt()
             print(if (i == 0) llist[index] else ", ${llist[index]}")
         }
         println()
@@ -46,9 +47,21 @@ class FastAccessLinkedListTest3
         print("accesses: ")
         for(i in iterations)
         {
-            val index = (Math.random()*alist.lastIndex).toInt()
-            print(if (i == 0) llist[index] else ", ${llist[index]}")
+            val index = (accessed.start+Math.random()*(accessed.endInclusive-accessed.start)).toInt()
+            print(if (i == 0) falist[index] else ", ${falist[index]}")
         }
         println()
+    }
+
+    @Test
+    fun accessTest3()
+    {
+        compare(llist,alist)
+    }
+
+    @Test
+    fun accessTest4()
+    {
+        compare(falist,alist)
     }
 }
