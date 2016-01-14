@@ -63,7 +63,6 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         addFirst(e)
         return true
     }
-
     override fun offerLast(e:E):Boolean
     {
         addLast(e)
@@ -77,7 +76,6 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         if (e != null) removeFirst()
         return e
     }
-
     override fun pollLast():E?
     {
         val e = peekLast()
@@ -97,17 +95,8 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         }
         return false
     }
-
     override fun removeFirstOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,iterator())
     override fun removeLastOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,descendingIterator())
-
-    override fun descendingIterator() = object:MutableIterator<E>
-    {
-        val it = listIterator(size)
-        override fun remove() = it.remove()
-        override fun hasNext():Boolean = it.hasPrevious()
-        override fun next():E = it.previous()
-    }
 
     private fun node(index:Int):Node<E>? = lock.read()
     {
@@ -164,6 +153,14 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         cachedNodes.offer(resultNode)
 
         return node
+    }
+
+    override fun descendingIterator() = object:MutableIterator<E>
+    {
+        val it = listIterator(size)
+        override fun remove() = it.remove()
+        override fun hasNext():Boolean = it.hasPrevious()
+        override fun next():E = it.previous()
     }
 
     override fun listIterator(index:Int) = object:MutableListIterator<E>
