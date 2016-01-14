@@ -10,7 +10,7 @@ import junit.framework.*;
 
 public class FastAccessLinkedListTest2 extends TestCase
 {
-    private List<String> list = new FastAccessLinkedList<>();
+    private List<String> list = new FastAccessLinkedList<String>();
 
     // You can use the constructor instead of setUp():
     public FastAccessLinkedListTest2(String name)
