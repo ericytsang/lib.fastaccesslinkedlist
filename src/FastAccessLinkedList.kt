@@ -2,11 +2,8 @@ import java.util.AbstractSequentialList
 import java.util.ConcurrentModificationException
 import java.util.Deque
 import java.util.NoSuchElementException
-import java.util.Objects
-import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import java.util.function.Consumer
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -242,7 +239,9 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         {
             checkForComodification()
             if (!hasNext())
+            {
                 throw NoSuchElementException()
+            }
 
             lastReturned = next
             next = next!!.next
@@ -259,7 +258,9 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         {
             checkForComodification()
             if (!hasPrevious())
+            {
                 throw NoSuchElementException()
+            }
 
             next = if (next == null) lastNode else next!!.prev
             lastReturned = next
@@ -281,14 +282,20 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         {
             checkForComodification()
             if (lastReturned == null)
+            {
                 throw IllegalStateException()
+            }
 
             val lastNext = lastReturned!!.next
             unlink(lastReturned!!)
             if (next === lastReturned)
+            {
                 next = lastNext
+            }
             else
+            {
                 nextIndex--
+            }
             cachedNodes.remove(IndexedNode(nextIndex,lastReturned!!))
             cachedNodes.filter {it.index > nextIndex}. forEach {it.index--}
             lastReturned = null
@@ -298,7 +305,9 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         override fun set(element:E)
         {
             if (lastReturned == null)
+            {
                 throw IllegalStateException()
+            }
             checkForComodification()
             lastReturned!!.data = element
         }
@@ -308,9 +317,13 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             checkForComodification()
             lastReturned = null
             if (next == null)
+            {
                 linkLast(element)
+            }
             else
+            {
                 linkBefore(element,next!!)
+            }
             cachedNodes.filter {it.index >= nextIndex}. forEach {it.index++}
             nextIndex++
             expectedModCount++
@@ -319,7 +332,9 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         internal fun checkForComodification()
         {
             if (modCount != expectedModCount)
+            {
                 throw ConcurrentModificationException()
+            }
         }
     }
 
