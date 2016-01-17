@@ -61,14 +61,14 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
     override fun poll():E? = pollFirst()
     override fun pollFirst():E?
     {
-        val e = peekFirst()
-        if (e != null) removeFirst()
-        return firstNode?.data
+        val e = firstNode?.data
+        if (isNotEmpty()) removeFirst()
+        return e
     }
     override fun pollLast():E?
     {
-        val e = peekLast()
-        if (e != null) removeLast()
+        val e = lastNode?.data
+        if (isNotEmpty()) removeLast()
         return e
     }
 
