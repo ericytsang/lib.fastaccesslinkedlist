@@ -3,11 +3,14 @@ import org.junit.Test
 /**
  * Created by Eric Tsang on 1/13/2016.
  */
+
+val IntRange.size:Int get() = last-first+1
+
 class FastAccessLinkedListTest3
 {
     val iterations = 0..10000
     val elements = 0..10000
-    val accessed = 4500..5500
+    val accessed = (elements.first+elements.size/2-50).toInt()..(elements.first+elements.size/2+50).toInt()
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
 
