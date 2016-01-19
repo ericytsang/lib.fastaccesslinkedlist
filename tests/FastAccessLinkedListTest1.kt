@@ -1,4 +1,5 @@
 import org.junit.Test
+import java.util.*
 
 /**
  * Created by Eric Tsang on 1/13/2016.
@@ -161,5 +162,157 @@ class FastAccessLinkedListTest1
             thrown = true
         }
         assert(thrown)
+    }
+
+    @Test
+    fun addFirstAddLastTest()
+    {
+        val list = FastAccessLinkedList<Int>()
+        list.addLast(0)
+        list.addFirst(1)
+        list.addLast(2)
+        list.addFirst(3)
+        list.addLast(4)
+        list.addFirst(5)
+        list.addLast(6)
+        assert(list == listOf(5,3,1,0,2,4,6))
+    }
+
+    @Test
+    fun pollFirstPollLastTest()
+    {
+        val list = FastAccessLinkedList(listOf(5,3,1,null,2,null,6))
+        assert(list.pollFirst() == 5)
+        assert(list.pollLast() == 6)
+        assert(list.pollFirst() == 3)
+        assert(list.pollFirst() == 1)
+        assert(list.pollFirst() == null)
+        assert(list.pollLast() == null)
+        assert(list.pollLast() == 2)
+        assert(list.pollFirst() == null)
+        assert(list.pollLast() == null)
+        assert(list == emptyList<Int?>())
+    }
+
+    @Test
+    fun removeFirstRemoveLastTest()
+    {
+        val list = FastAccessLinkedList(listOf(5,3,1,null,2,null,6))
+        assert(list.removeFirst() == 5)
+        assert(list.removeLast() == 6)
+        assert(list.removeFirst() == 3)
+        assert(list.removeFirst() == 1)
+        assert(list.removeFirst() == null)
+        assert(list.removeLast() == null)
+        assert(list.removeLast() == 2)
+        assert(list == emptyList<Int?>())
+    }
+
+    @Test
+    fun offerFirstOfferLastTest()
+    {
+        val list = FastAccessLinkedList<Int>()
+        assert(list.offerLast(0))
+        assert(list.offerFirst(1))
+        assert(list.offerLast(2))
+        assert(list.offerFirst(3))
+        assert(list.offerLast(4))
+        assert(list.offerFirst(5))
+        assert(list.offerLast(6))
+        assert(list == listOf(5,3,1,0,2,4,6))
+    }
+
+    @Test
+    fun getFirstThrowsExceptionWhenEmptyTest()
+    {
+        var exceptionThrown = false
+        try
+        {
+            val list = FastAccessLinkedList<Int?>()
+            list.first
+        }
+        catch (ex:NoSuchElementException)
+        {
+            exceptionThrown = true
+        }
+        assert(exceptionThrown,{"no exception was thrown"})
+    }
+
+    @Test
+    fun getLastThrowsExceptionWhenEmptyTest()
+    {
+        var exceptionThrown = false
+        try
+        {
+            val list = FastAccessLinkedList<Int?>()
+            list.last
+        }
+        catch (ex:NoSuchElementException)
+        {
+            exceptionThrown = true
+        }
+        assert(exceptionThrown,{"no exception was thrown"})
+    }
+
+    @Test
+    fun removeFirstThrowsExceptionWhenEmptyTest()
+    {
+        var exceptionThrown = false
+        try
+        {
+            val list = FastAccessLinkedList<Int?>()
+            list.removeFirst()
+        }
+        catch (ex:NoSuchElementException)
+        {
+            exceptionThrown = true
+        }
+        assert(exceptionThrown,{"no exception was thrown"})
+    }
+
+    @Test
+    fun removeLastThrowsExceptionWhenEmptyTest()
+    {
+        var exceptionThrown = false
+        try
+        {
+            val list = FastAccessLinkedList<Int?>()
+            list.removeLast()
+        }
+        catch (ex:NoSuchElementException)
+        {
+            exceptionThrown = true
+        }
+        assert(exceptionThrown,{"no exception was thrown"})
+    }
+
+    @Test
+    fun getFirstGetLastTest()
+    {
+        val list = FastAccessLinkedList<Int?>()
+        list.addFirst(null)
+        assert(list.first == null)
+        list.addFirst(0)
+        assert(list.first == 0)
+        assert(list.last == null)
+        list.addLast(0)
+        assert(list.last == 0)
+        assert(list.size == 3)
+    }
+
+    @Test
+    fun peekFirstPeekLastTest()
+    {
+        val list = FastAccessLinkedList<Int?>()
+        assert(list.peekFirst() == null)
+        assert(list.peekLast() == null)
+        list.addFirst(null)
+        assert(list.peekFirst() == null)
+        list.addFirst(0)
+        assert(list.peekFirst() == 0)
+        assert(list.peekLast() == null)
+        list.addLast(0)
+        assert(list.peekLast() == 0)
+        assert(list.size == 3)
     }
 }
