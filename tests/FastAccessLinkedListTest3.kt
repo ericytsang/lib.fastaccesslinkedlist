@@ -10,7 +10,7 @@ class FastAccessLinkedListTest3
 {
     val iterations = 0..10000
     val elements = 0..10000
-    val accessed = (elements.first+elements.size/2-50).toInt()..(elements.first+elements.size/2+50).toInt()
+    val accessed = (elements.first+elements.size/2-5000).toInt()..(elements.first+elements.size/2+5000).toInt()
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
 
@@ -21,7 +21,7 @@ class FastAccessLinkedListTest3
     }
 
     @Test
-    fun accessTest1()
+    fun linkedListRandomlyAccessingElementsNearTheMiddleTest()
     {
         print("accesses: ")
         for(i in iterations)
@@ -33,7 +33,7 @@ class FastAccessLinkedListTest3
     }
 
     @Test
-    fun accessTest2()
+    fun fastAccessLinkedListRandomlyAccessingElementsNearTheMiddleTest()
     {
         print("accesses: ")
         for(i in iterations)
@@ -45,7 +45,31 @@ class FastAccessLinkedListTest3
     }
 
     @Test
-    fun accessTest3()
+    fun linkedListTestRandomlyAccessingElementsEverywhere()
+    {
+        print("accesses: ")
+        for(i in iterations)
+        {
+            val index = (elements.start+Math.random()*(elements.endInclusive-elements.start)).toInt()
+            print(if (i == 0) llist[index] else ", ${llist[index]}")
+        }
+        println()
+    }
+
+    @Test
+    fun fastAccessLinkedListRandomlyAccessingElementsEverywhereTest()
+    {
+        print("accesses: ")
+        for(i in iterations)
+        {
+            val index = (elements.start+Math.random()*(elements.endInclusive-elements.start)).toInt()
+            print(if (i == 0) falist[index] else ", ${falist[index]}")
+        }
+        println()
+    }
+
+    @Test
+    fun linkedListSequentiallyAccessingTheWithoutIteratorTest()
     {
         val stb = StringBuilder()
         stb.append("accesses: ")
@@ -54,7 +78,7 @@ class FastAccessLinkedListTest3
     }
 
     @Test
-    fun accessTest4()
+    fun fastAccessLinkedListSequentiallyAccessingTheWithoutIteratorTest()
     {
         val stb = StringBuilder()
         stb.append("accesses: ")
