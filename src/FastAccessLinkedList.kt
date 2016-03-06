@@ -1,20 +1,13 @@
-import java.util.AbstractSequentialList
-import java.util.ConcurrentModificationException
-import java.util.Deque
-import java.util.NoSuchElementException
+import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 
-/**
- * Created by Eric Tsang on 1/13/2016.
- */
-
-class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNodes:Int = 10):AbstractSequentialList<E>(),Deque<E>
+class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:Int = 5):AbstractSequentialList<E>()
 {
     /**
      * [LinkedBlockingQueue] ordered by LRU of [Pair]s of [Node]s and their
      * index in the [FastAccessLinkedList].
      */
-    private val cachedNodes = LinkedBlockingQueue<IndexedNode<E>>(numCachedNodes)
+    private val nodeCache = LinkedBlockingQueue<IndexedNode<E>>(numCachedNodes)
 
     private var firstNode:Node<E>? = null
 
@@ -25,154 +18,40 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
 
     init
     {
-        addAll(elements)
+        if (numCachedNodes < 1) throw IllegalArgumentException("numCachedNodes must be >= 1");
+        addAll(elements);
     }
 
-    override fun addFirst(e:E) = if (firstNode != null) linkBefore(e,firstNode!!) else linkLast(e)
-    override fun addLast(e:E) = linkLast(e)
-
-    override fun element():E = first
-    override fun getFirst():E = (firstNode ?: throw NoSuchElementException()).data
-    override fun getLast():E = (lastNode ?: throw NoSuchElementException()).data
-
-    override fun peek():E? = peekFirst()
-    override fun peekFirst():E? = firstNode?.data
-    override fun peekLast():E? = lastNode?.data
-
-    override fun remove():E = removeFirst()
-    override fun removeFirst():E = unlink(firstNode ?: throw NoSuchElementException())
-    override fun removeLast():E = unlink(lastNode ?: throw NoSuchElementException())
-
-    override fun pop():E = removeFirst()
-    override fun push(e:E) = addFirst(e)
-
-    override fun offer(e:E):Boolean = offerLast(e)
-    override fun offerFirst(e:E):Boolean
+    /**
+     * add this node to the cached nodes and remove previous (if any) to maintain its LRU ordering.
+     */
+    private fun cacheNode(index:Int,node:Node<E>)
     {
-        addFirst(e)
-        return true
-    }
-    override fun offerLast(e:E):Boolean
-    {
-        addLast(e)
-        return true
-    }
-
-    override fun poll():E? = pollFirst()
-    override fun pollFirst():E?
-    {
-        val e = peekFirst()
-        if (isNotEmpty()) removeFirst()
-        return e
-    }
-    override fun pollLast():E?
-    {
-        val e = peekLast()
-        if (isNotEmpty()) removeLast()
-        return e
-    }
-
-    private fun removeFirstOccurrence(o:Any?,it:MutableIterator<E>):Boolean
-    {
-        while (it.hasNext())
+        if (node != firstNode && node != lastNode)
         {
-            if (o == it.next())
+            val resultNode = IndexedNode(index,node)
+            if (!nodeCache.removeAll {it == resultNode} &&
+                nodeCache.remainingCapacity() == 0)
             {
-                it.remove()
-                return true
+                nodeCache.remove()
             }
+            nodeCache.add(resultNode)
         }
-        return false
-    }
-    override fun removeFirstOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,iterator())
-    override fun removeLastOccurrence(o:Any?):Boolean = removeFirstOccurrence(o,descendingIterator())
-
-    /**
-     * removes [outcast] from the list.
-     */
-    private fun unlink(outcast:Node<E>):E
-    {
-        val element = outcast.data
-        val next = outcast.next
-        val prev = outcast.prev
-
-        if (prev == null)
-        {
-            firstNode = next
-        }
-        else
-        {
-            prev.next = next
-            outcast.prev = null
-        }
-
-        if (next == null)
-        {
-            lastNode = prev
-        }
-        else
-        {
-            next.prev = prev
-            outcast.next = null
-        }
-
-        size--
-        modCount++
-        return element
-    }
-
-    /**
-     * adds [element] as last element of the list.
-     */
-    private fun linkLast(element:E)
-    {
-        val prev = lastNode
-        val newNode = Node(prev,element,null)
-        lastNode = newNode
-        if (prev == null)
-        {
-            firstNode = newNode
-        }
-        else
-        {
-            prev.next = newNode
-        }
-        size++
-        modCount++
-    }
-
-    /**
-     * inserts [element] before [next].
-     */
-    private fun linkBefore(element:E,next:Node<E>)
-    {
-        val prev = next.prev
-        val newNode = Node(prev,element,next)
-        next.prev = newNode
-        if (prev == null)
-        {
-            firstNode = newNode
-        }
-        else
-        {
-            prev.next = newNode
-        }
-        size++
-        modCount++
     }
 
     private fun node(index:Int):Node<E>
     {
         // resolve the node nearest the specified index will at least be
         // resolved to either the first or last node
-        val nearestNode = cachedNodes
+        val nearestNode = nodeCache
             .plus(IndexedNode(0,firstNode!!))
             .plus(IndexedNode(lastIndex,lastNode!!))
             .minBy {Math.abs(it.index-index)}!!
 
         // iterate through the list until we reach the requested node
         var (nodeIndex,node) = nearestNode
-        debug("operation: get($index), index distance: ${Math.abs(nodeIndex-index)}")
+
+        // println("operation: get($index), index distance: ${Math.abs(nodeIndex-index)}")
 
         if (nodeIndex > index)
         {
@@ -183,28 +62,9 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             for (i in nodeIndex+1..index) node = node.next!!
         }
 
-        // add this node to the cached nodes and remove previous (if any) to
-        // maintain its LRU ordering
-        val resultNode = IndexedNode(index,node)
-        if (nearestNode == resultNode)
-        {
-            cachedNodes.remove(resultNode)
-        }
-        if (cachedNodes.remainingCapacity() == 0)
-        {
-            cachedNodes.poll()
-        }
-        cachedNodes.offer(resultNode)
+        cacheNode(index,node)
 
         return node
-    }
-
-    override fun descendingIterator() = object:MutableIterator<E>
-    {
-        val it = listIterator(size)
-        override fun remove() = it.remove()
-        override fun hasNext():Boolean = it.hasPrevious()
-        override fun next():E = it.previous()
     }
 
     override fun listIterator(index:Int) = object:MutableListIterator<E>
@@ -236,7 +96,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             lastReturned = next
             next = next!!.next
             nextIndex++
-            return lastReturned!!.data
+            return lastReturned!!.data as E
         }
 
         override fun hasPrevious():Boolean
@@ -255,7 +115,7 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             next = if (next == null) lastNode else next!!.prev
             lastReturned = next
             nextIndex--
-            return lastReturned!!.data
+            return lastReturned!!.data as E
         }
 
         override fun nextIndex():Int
@@ -271,13 +131,10 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
         override fun remove()
         {
             checkForComodification()
-            if (lastReturned == null)
-            {
-                throw IllegalStateException()
-            }
+            val lastReturned = lastReturned ?: throw IllegalStateException()
+            val lastNext = lastReturned.next
 
-            val lastNext = lastReturned!!.next
-            unlink(lastReturned!!)
+            unlink(lastReturned)
             if (next === lastReturned)
             {
                 next = lastNext
@@ -286,27 +143,29 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             {
                 nextIndex--
             }
-            cachedNodes.remove(IndexedNode(nextIndex,lastReturned!!))
-            if (lastNext != null) cachedNodes.add(IndexedNode(nextIndex,lastNext))
-            cachedNodes.filter {it.index > nextIndex}.forEach {it.index--}
-            lastReturned = null
+
+            // remove removed node from cache while caching the node next to it
+            nodeCache.remove(IndexedNode(nextIndex,lastReturned))
+            if (lastNext != null) cacheNode(nextIndex,lastNext)
+
+            // update indices in node cache
+            nodeCache.forEach {if (it.index > nextIndex) it.index--}
+
+            this.lastReturned = null
             expectedModCount++
         }
 
         override fun set(element:E)
         {
-            if (lastReturned == null)
-            {
-                throw IllegalStateException()
-            }
             checkForComodification()
-            lastReturned!!.data = element
+            (lastReturned ?: throw IllegalStateException()).data = element
         }
 
         override fun add(element:E)
         {
             checkForComodification()
             lastReturned = null
+
             if (next == null)
             {
                 linkLast(element)
@@ -315,7 +174,10 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
             {
                 linkBefore(element,next!!)
             }
-            cachedNodes.filter {it.index >= nextIndex}. forEach {it.index++}
+
+            // update indices in node cache
+            nodeCache.forEach {if (it.index >= nextIndex) it.index++}
+
             nextIndex++
             expectedModCount++
         }
@@ -327,12 +189,84 @@ class FastAccessLinkedList<E>(elements:Collection<E> = emptyList(),numCachedNode
                 throw ConcurrentModificationException()
             }
         }
+
+        /**
+         * removes [outcast] from the list.
+         */
+        private fun unlink(outcast:Node<E>):E
+        {
+            val element = outcast.data
+            val next = outcast.next
+            val prev = outcast.prev
+
+            if (prev == null)
+            {
+                firstNode = next
+            }
+            else
+            {
+                prev.next = next
+                outcast.prev = null
+            }
+
+            if (next == null)
+            {
+                lastNode = prev
+            }
+            else
+            {
+                next.prev = prev
+                outcast.next = null
+            }
+
+            outcast.data = null
+            size--
+            modCount++
+            return element as E
+        }
+
+        /**
+         * adds [element] as last element of the list.
+         */
+        private fun linkLast(element:E)
+        {
+            val prev = lastNode
+            val newNode = Node(prev,element,null)
+            lastNode = newNode
+            if (prev == null)
+            {
+                firstNode = newNode
+            }
+            else
+            {
+                prev.next = newNode
+            }
+            size++
+            modCount++
+        }
+
+        /**
+         * inserts [element] before [next].
+         */
+        private fun linkBefore(element:E,next:Node<E>)
+        {
+            val prev = next.prev
+            val newNode = Node(prev,element,next)
+            next.prev = newNode
+            if (prev == null)
+            {
+                firstNode = newNode
+            }
+            else
+            {
+                prev.next = newNode
+            }
+            size++
+            modCount++
+        }
     }
 
-    private data class Node<D>(var prev:Node<D>?,var data:D,var next:Node<D>?)
+    private data class Node<D>(var prev:Node<D>?,var data:D?,var next:Node<D>?)
 
     private data class IndexedNode<D>(var index:Int,var node:Node<D>)
-
-//    private fun debug(string:String) = println(string)
-    private fun debug(string:String) = Unit
 }
