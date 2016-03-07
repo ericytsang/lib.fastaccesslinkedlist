@@ -8,9 +8,9 @@ val IntRange.size:Int get() = last-first+1
 
 class FastAccessLinkedListTest3
 {
-    val iterations = 0..10
-    val elements = 0..10000
-    val accessed = (elements.first+elements.size/2-5000).toInt()..(elements.first+elements.size/2+5000).toInt()
+    val iterations = 0..10000
+    val elements = 0..100000
+    val accessed = (elements.first+elements.size/2-500).toInt()..(elements.first+elements.size/2+500).toInt()
     val falist = FastAccessLinkedList<Int>()
     val llist = LinkedList<Int>()
 
