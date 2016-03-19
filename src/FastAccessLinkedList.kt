@@ -71,11 +71,11 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
 
         if (nearestNode.index > index)
         {
-            repeat(nearestNode.index-index) {node = node.prev}
+             for (i in index+1..nearestNode.index) {node = node.prev}
         }
         else
         {
-            repeat(index-nearestNode.index) {node = node.next}
+             for (i in nearestNode.index+1..index) {node = node.next}
         }
 
         cacheNode(index,node)
