@@ -1,12 +1,11 @@
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 
 class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:Int = 5):AbstractSequentialList<E>()
 {
     /**
-     * [LinkedBlockingQueue] ordered by LRU of [Pair]s of [Node]s and their
-     * index in the [FastAccessLinkedList].
+     * [Queue] ordered by LRU of [Pair]s of [Node]s and their index in the
+     * [FastAccessLinkedList].
      */
     private val nodeCache = ArrayBlockingQueue<IndexedNode<E>>(numCachedNodes)
 
@@ -71,11 +70,11 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
 
         if (nearestNode.index > index)
         {
-            repeat(nearestNode.index-index) {node = node.prev}
+             for (i in index+1..nearestNode.index) {node = node.prev}
         }
         else
         {
-            repeat(index-nearestNode.index) {node = node.next}
+             for (i in nearestNode.index+1..index) {node = node.next}
         }
 
         cacheNode(index,node)
