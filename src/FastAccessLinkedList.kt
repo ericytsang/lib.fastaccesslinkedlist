@@ -1,13 +1,8 @@
 import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
 
 class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:Int = 5):AbstractSequentialList<E>()
 {
-    /**
-     * [Queue] ordered by LRU of [Pair]s of [Node]s and their index in the
-     * [FastAccessLinkedList].
-     */
-    private val nodeCache = ArrayBlockingQueue<IndexedNode<E>>(numCachedNodes)
+    private val nodeCache = Cache<Int,INode<E>>(LruEvictionPolicy<Int>(),numCachedNodes)
 
     private val nullNode = object:INode<E>
     {
@@ -42,13 +37,7 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
     {
         if (node != firstNode && node != lastNode)
         {
-            val resultNode = IndexedNode(index,node)
-            if (!nodeCache.remove(resultNode) &&
-                nodeCache.remainingCapacity() == 0)
-            {
-                nodeCache.remove()
-            }
-            nodeCache.add(resultNode)
+            nodeCache[index] = node
         }
     }
 
@@ -57,10 +46,10 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
         // resolve the node nearest the specified index will at least be
         // resolved to either the first or last node
         var nearestNode = if (index < size shr 1) IndexedNode(0,firstNode) else IndexedNode(lastIndex,lastNode)
-        nodeCache.forEach()
+        nodeCache.entries.forEach()
         {
-            if (Math.abs(it.index-index) < Math.abs(nearestNode.index-index))
-                nearestNode = it
+            if (Math.abs(it.key-index) < Math.abs(nearestNode.index-index))
+                nearestNode = IndexedNode(it.key,it.value)
         }
 
         // iterate through the list until we reach the requested node
@@ -159,11 +148,19 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
             }
 
             // remove removed node from cache while caching the node next to it
-            nodeCache.remove(IndexedNode(nextIndex,lastReturned))
+            nodeCache.remove(nextIndex)
             if (lastNext !== nullNode) cacheNode(nextIndex,lastNext)
 
             // update indices in node cache
-            nodeCache.forEach {if (it.index > nextIndex) it.index--}
+            val newMapping = nodeCache.entries.associate()
+            {
+                if (it.key > nextIndex)
+                    it.key-1 to it.value
+                else
+                    it.key to it.value
+            }
+            nodeCache.clear()
+            nodeCache.putAll(newMapping)
 
             lastReturned = nullNode
             expectedModCount++
@@ -190,7 +187,15 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
             }
 
             // update indices in node cache
-            nodeCache.forEach {if (it.index >= nextIndex) it.index++}
+            val newMapping = nodeCache.entries.associate()
+            {
+                if (it.key >= nextIndex)
+                    it.key+1 to it.value
+                else
+                    it.key to it.value
+            }
+            nodeCache.clear()
+            nodeCache.putAll(newMapping)
 
             nextIndex++
             expectedModCount++
