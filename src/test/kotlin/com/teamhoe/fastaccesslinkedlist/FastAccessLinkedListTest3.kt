@@ -1,4 +1,7 @@
+package com.teamhoe.fastaccesslinkedlist
+
 import org.junit.Test
+import java.util.*
 
 /**
  * Created by Eric Tsang on 1/13/2016.

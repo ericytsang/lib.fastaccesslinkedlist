@@ -1,3 +1,5 @@
+package com.teamhoe.fastaccesslinkedlist
+
 import org.junit.Test
 
 /**
@@ -5,7 +7,8 @@ import org.junit.Test
  */
 class ObjectTest
 {
-    fun obj():Interface = object:Interface{}
+    fun obj():Interface = object:Interface
+    {}
 
     interface Interface
 

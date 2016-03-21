@@ -1,4 +1,8 @@
+package com.teamhoe.fastaccesslinkedlist
+
 import java.util.*
+import com.teamhoe.cache.Cache
+import com.teamhoe.cache.LruEvictionPolicy
 
 class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:Int = 5):AbstractSequentialList<E>()
 {
