@@ -1,4 +1,4 @@
-package com.teamhoe.fastaccesslinkedlist;
+package com.github.ericytsang.lib.fastaccesslinkedlist;
 // : c15:FastAccessLinkedListTest2.java
 //Simple use of JUnit to test ArrayList
 //{Depends: junit.jar}

@@ -1,4 +1,4 @@
-package com.teamhoe.fastaccesslinkedlist
+package com.github.ericytsang.lib.fastaccesslinkedlist
 import org.junit.Test
 
 /**

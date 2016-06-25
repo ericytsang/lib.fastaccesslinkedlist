@@ -1,8 +1,8 @@
-package com.teamhoe.fastaccesslinkedlist
+package com.github.ericytsang.lib.fastaccesslinkedlist
 
 import java.util.*
-import com.teamhoe.cache.Cache
-import com.teamhoe.cache.LruEvictionPolicy
+import com.github.ericytsang.lib.cache.Cache
+import com.github.ericytsang.lib.cache.LruEvictionPolicy
 
 class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:Int = 5):AbstractSequentialList<E>()
 {
@@ -26,7 +26,7 @@ class FastAccessLinkedList<E>(elements:Iterable<E> = emptyList(),numCachedNodes:
     private var lastNode:INode<E> = nullNode
 
     override var size:Int = 0
-        protected set
+        private set
 
     init
     {
